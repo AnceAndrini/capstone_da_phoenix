@@ -1,3 +1,4 @@
+  
 from flask import Flask, request
 import sqlite3
 import requests
@@ -72,7 +73,6 @@ def route_add_station():
 
 @app.route('/trips/add', methods=['POST']) 
 def route_add_trips():
-    # parse and transform incoming data into a tuple as we need 
     data = pd.Series(eval(request.get_json(force=True)))
     data = tuple(data.fillna('').values)
     
@@ -80,35 +80,41 @@ def route_add_trips():
     result = insert_into_trips(data, conn)
     return result
 
-# @app.route('/trips/AvarageTime/<period>', methods=['POST']) 
-# def route_AvarageTime():
-# input_data = pd.Series(eval(request.get_json(force=True)))) # Get the input as dictionary
-# input_data = tuple(input_data.fillna('').values)
-# specified_date = input_data['period'] # Select specific items (period) from the dictionary (the value will be "2015-08")
-# conn = make_connection()
-# result = selected_data.groupby('start_station_id').agg({
-#     'bikeid' : 'count', 
-#     'duration_minutes' : 'mean'
-# })
 
-# # Return the result
-# return result.to_json()
+@app.route('/trips/Averagetime', methods=['POST']) 
 
+def route_AverageTime():
+    input_data = request.get_json(force=True) # Get the input as dictionary
+    
+    specified_date = input_data['period'] # Select specific items (period) from the dictionary (the value will be "2015-08")
+
+    conn = make_connection()
+
+    result = selected_data(specified_date, conn).groupby('start_station_id').agg({
+        'bikeid' : 'count', 
+        'duration_minutes' : 'mean'
+    })
+
+    return result.to_json()
+
+    
 ########## FUNCTION ############
 def make_connection():
     connection = sqlite3.connect('austin_bikeshare.db')
     return connection
+
+def selected_data(specified_date,conn):
+    query = f"""SELECT * FROM trips WHERE start_time LIKE '{specified_date}%'"""
+    selected_data = pd.read_sql_query(query, conn)
+    result = pd.read_sql_query(query, conn)
+    return result
 
 def get_all_stations(conn):
     query = f"""SELECT * FROM stations"""
     result = pd.read_sql_query(query, conn)
     return result
 
-# def selected_data(specified_date,conn):
-#     query = f"SELECT * FROM stations WHERE start_time LIKE ({specified_date}%)"
-#     selected_data = pd.read_sql_query(query, conn)
-#     result = pd.read_sql_query(query, conn)
-#     return result
+
 
 def get_station_id(station_id, conn):
     query = f"""SELECT * FROM stations WHERE station_id = {station_id}"""
